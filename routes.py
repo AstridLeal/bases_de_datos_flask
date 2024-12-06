@@ -1,25 +1,24 @@
-from app import app, db
-from models import Usuario
-from flask import render_template, redirect, url_for
+from flask import Blueprint, jsonify
+from models import User
+from database import db
 
-# Ruta para agregar un nuevo usuario
-@app.route('/add_user/<nombre>/<email>')
-def add_user(nombre, email):
-    # Creamos un nuevo usuario con los datos proporcionados
-    usuario = Usuario(nombre=nombre, email=email)
-    
-    # Lo agregamos a la sesión de la base de datos
-    db.session.add(usuario)
-    db.session.commit()  # Confirmamos los cambios
+# Crea el Blueprint
+routes = Blueprint('routes', __name__)
 
-    # Mensaje de éxito
-    return f'Usuario {nombre} agregado con éxito.'
+@routes.route('/add_user/<name>/<email>', methods=['GET'])
+def add_user(name, email):
+    try:
+        user = User(name=name, email=email)
+        db.session.add(user)
+        db.session.commit()
+        return jsonify({"message": f"Usuario {name} agregado con éxito"}), 201
+    except Exception as e:
+        return jsonify({"error": str(e)}), 400
 
-# Ruta para mostrar todos los usuarios
-@app.route('/usuarios')
-def usuarios():
-    # Consultamos todos los usuarios en la base de datos
-    usuarios = Usuario.query.all()
-
-    # Los mostramos en formato HTML simple
-    return '<br>'.join([f'{u.id}. {u.nombre} - {u.email}' for u in usuarios])
+@routes.route('/usuarios', methods=['GET'])
+def get_users():
+    try:
+        users = User.query.all()
+        return jsonify({"usuarios": [user.to_dict() for user in users]})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
